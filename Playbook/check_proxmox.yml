@@ -1,0 +1,50 @@
+---
+- name: Proxmox Host Status Check
+  hosts: all
+  become: yes
+  tasks:
+    - name: Get Proxmox version
+      command: pveversion
+      register: pve_version
+      changed_when: false
+
+    - name: Get Cluster status
+      command: pvecm status
+      register: cluster_status
+      changed_when: false
+      failed_when: false # Might not be clustered
+
+    - name: Get Storage status
+      command: pvesm status
+      register: storage_status
+      changed_when: false
+
+    - name: List Virtual Machines (QM)
+      command: qm list
+      register: vm_list
+      changed_when: false
+
+    - name: List Containers (PCT)
+      command: pct list
+      register: ct_list
+      changed_when: false
+
+    - name: Get Node Resource Usage
+      command: pvesh get /nodes/{{ ansible_hostname }}/status
+      register: node_usage
+      changed_when: false
+      failed_when: false
+
+    - name: Display Status Summary
+      debug:
+        msg:
+          - "--- PROXMOX VERSION ---"
+          - "{{ pve_version.stdout }}"
+          - "--- CLUSTER STATUS ---"
+          - "{{ cluster_status.stdout | default('Not a cluster node or command failed') }}"
+          - "--- STORAGE STATUS ---"
+          - "{{ storage_status.stdout }}"
+          - "--- VIRTUAL MACHINES ---"
+          - "{{ vm_list.stdout }}"
+          - "--- CONTAINERS ---"
+          - "{{ ct_list.stdout }}"
